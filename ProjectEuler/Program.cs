@@ -6,7 +6,21 @@ namespace ProjectEuler
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            DateTime dtmStart = DateTime.Now;
+            ISolve problem = new PE74_1();           
+            
+            problem.SetData();
+            problem.Solve();
+            
+            DateTime dtmCompleted = DateTime.Now;
+            TimeSpan tspLength = dtmCompleted - dtmStart;
+            Console.WriteLine($"Total elapsed time: {tspLength.TotalSeconds} seconds");
         }
+    }
+
+    public interface ISolve 
+    {
+        void SetData();
+        void Solve();
     }
 }
