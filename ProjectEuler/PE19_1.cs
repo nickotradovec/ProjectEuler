@@ -9,8 +9,6 @@ namespace ProjectEuler {
         public void SetData () {
 
         }
-        Int32 intEvaluate = 1000;
-
         public void Solve () {
 
             Int32 count = 0;

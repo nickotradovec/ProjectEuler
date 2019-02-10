@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 
 namespace ProjectEuler {
     public class PE96_1 : ISolve {
@@ -14,110 +14,98 @@ namespace ProjectEuler {
             string line;
             int lineNumber = 0;
             int puzzleLine = 0;
-            using (StreamReader sr = new StreamReader(@"../PEFiles/PE96.sudokus.txt")) { 
+            using (StreamReader sr = new StreamReader (@"../PEFiles/PE96.sudokus.txt")) {
 
-                Int16[,] data = new Int16[9,9];
+                Int16[, ] data = new Int16[9, 9];
                 string name = "";
-                line = sr.ReadLine();
+                line = sr.ReadLine ();
                 do {
                     puzzleLine = lineNumber % 10;
-                    
-                    if (puzzleLine == 0) { name = line; }
-                    else {  
-                        for ( int i =0; i<9; i++ ) {
-                            data[puzzleLine - 1, i] = (Int16)char.GetNumericValue(line[i]);
+
+                    if (puzzleLine == 0) { name = line; } else {
+                        for (int i = 0; i < 9; i++) {
+                            data[puzzleLine - 1, i] = (Int16) char.GetNumericValue (line[i]);
                         }
                     }
 
-                    if ( puzzleLine == 9 ) {
-                        puzzles.Add(new Sudoku(data, name));
-                        data = new Int16[9,9];
+                    if (puzzleLine == 9) {
+                        puzzles.Add (new Sudoku (data));
+                        data = new Int16[9, 9];
                     }
 
-                    lineNumber ++;
-                } while ( (line = sr.ReadLine()) != null );
+                    lineNumber++;
+                } while ((line = sr.ReadLine ()) != null);
             }
         }
 
         public void Solve () {
 
             Int32 count = 0;
+            Int32 puzzleCount = 0;
 
-            for(int i=0; i<puzzles.Count; i++) {
+            for (int i = 0; i < puzzles.Count; i++) {
 
-                SudokuSolver sdkSolve = new SudokuSolver();
-                puzzles[i] = sdkSolve.Solve(puzzles[i]);
-                count += puzzles[i].GetFirstThree();
-                Console.WriteLine($"Puzzle {i} solved.");
-
+                puzzles[i] = SudokuSolver.Solve (puzzles[i], 0);
+                puzzleCount = puzzles[i].GetFirstThree ();              
+                //Console.WriteLine ($"Puzzle {i} solved with {puzzleCount} as first three");
+                count += puzzleCount;
             }
-            Console.WriteLine($"Count: {count}");
+            Console.WriteLine ($"Count: {count}");
         }
     }
 
-    public class SudokuSolver
-    {
-        private Sudoku solution;
+    static class SudokuSolver {
+        public static Sudoku Solve (Sudoku sdk, Int32 level) {
 
-        public SudokuSolver() {
-            solution = null;
-        }
-        public Sudoku Solve(Sudoku sdk) {
+            sdk.SolveToStable ();
 
-            while( solution == null ) {
-                sdk.SolveToStable();
-           
-                if ( sdk.IsSolved() ) {
-                    solution = sdk;
-                    break;
-                } else if ( sdk.IsInvalid() ) {
-                    break;
-                }
+            if (sdk.IsSolved ()) {
+                return sdk;
+            } else if (sdk.IsInvalid ()) {
+                return null;
+            }
 
-                // We'd prefer to take guesses where there are as few options as possible.
-                // Doing so will minimize the number of branches created.
-                int guessThreshhold = 2;
-                Boolean guessFound = false;
-                while ( ! guessFound ) {
-                    for (Int16 i = 0; i < 9; i++ ) {
-                        for (Int16 j = 0; j < 9; j++ ) {
-                            if ( sdk.data[i,j] == 0 && sdk.remaining[i, j].Count <= guessThreshhold ) {
-                                guessFound = true;
-                                
-                                foreach ( Int16 guess in sdk.remaining[i, j] ) {
-                                    Sudoku test = new Sudoku();
-                                    test.data = sdk.DataCopy(); // copy methods?
-                                    test.remaining = sdk.RemainingCopy(); // copy methods?
-                                    test.SetValue(i, j, guess);
-                                    SudokuSolver testSolve = new SudokuSolver();
-                                    solution = testSolve.Solve(test);
+            // We'd prefer to take guesses where there are as few options as possible.
+            // Doing so will minimize the number of branches created and lead a reasonable fast solve.
+            int guessThreshhold = 2;
+            Boolean guessFound = false;
+            while (!guessFound) {
+                for (Int16 i = 0; i < 9; i++) {
+                    for (Int16 j = 0; j < 9; j++) {
+                        if (sdk.data[i, j] == 0 && sdk.remaining[i, j].Count <= guessThreshhold) {
+                            guessFound = true;
 
-                                    if (solution != null) { return solution;}
-                                }                      
+                            foreach (Int16 guess in sdk.remaining[i, j]) {
+                                Sudoku test = new Sudoku ();
+                                test.data = sdk.DataCopy ();
+                                test.remaining = sdk.RemainingCopy ();
+                                test.SetValue (i, j, guess);
+                                //Console.WriteLine ($"Level {level}, guess value {guess} at ({i},{j})");
+                                //test.Print();
+                                Sudoku solution = Solve (test, level + 1);
+
+                                if (solution != null) { return solution; }
                             }
                         }
+                        if (guessFound) { break; }
                     }
-                    guessThreshhold ++; // we coudln't find anywhere to guess with the threshhold values
+                    if (guessFound) { break; }
                 }
+                guessThreshhold++; // we coudln't find anywhere to guess with the threshhold values
             }
-            return solution;
+            return null;
         }
     }
 
     public class Sudoku {
 
-        public string Name;
         public Int16[, ] data = new Int16[9, 9];
         public List<Int16>[, ] remaining = new List<Int16>[9, 9];
-        public Int16 _column, _square;
 
-        public Sudoku () {
+        public Sudoku () { }
 
-        }
- 
-        public Sudoku (Int16[, ] puzzle, string name) {
+        public Sudoku (Int16[, ] puzzle) {
             data = puzzle;
-            Name = name;
 
             List<Int16> lstAdd = new List<Int16> (9);
             for (Int16 k = 1; k <= 9; k++) { lstAdd.Add (k); }
@@ -137,22 +125,8 @@ namespace ProjectEuler {
             }
         }
 
-        public Int16 GetFirstThree () {
-            return (Int16) (data[0, 0] + data[0, 1] + data[0, 2]);
-        }
-
-        public Boolean Solve () {
-
-            Boolean isValid = false;
-            //do {
-            SolveToStable ();
-            // Take Guess here
-            //} while ( ! IsCompleted(ref isValid) );
-            
-            if (!IsCompleted (ref isValid)) {
-                return false;
-            }
-            return true;         
+        public int GetFirstThree () {
+            return (100 * data[0, 0]) + (10 * data[0, 1]) + data[0, 2];
         }
 
         public void SolveToStable () {
@@ -229,7 +203,7 @@ namespace ProjectEuler {
             for (Int16 i = 0; i < 3; i++) {
                 for (Int16 j = 0; j < 3; j++) {
                     TryEliminate ((Int16) (3 * Math.Floor ((double) row / 3) + i),
-                        (Int16) (3 * Math.Floor ((double) col / 3) + j), val);
+                                  (Int16) (3 * Math.Floor ((double) col / 3) + j), val);
                 }
             }
         }
@@ -243,22 +217,12 @@ namespace ProjectEuler {
             return false;
         }
 
-        public Boolean IsCompleted (ref Boolean isValid) {
-            if (IsSolved ()) { 
-                isValid = true; return true; 
-            } else if (IsInvalid ()) { 
-                isValid = false; return true; 
-            }
-            isValid = false;
-            return false;
-        }
-
         public Boolean IsSolved () {
 
             for (Int16 i = 0; i < 9; i++) {
-                for (Int16 j = 0; j < 9; j++) {              
+                for (Int16 j = 0; j < 9; j++) {
                     if (data[i, j] == 0) { return false; }
-                }              
+                }
             }
             return true;
         }
@@ -267,10 +231,10 @@ namespace ProjectEuler {
 
             for (Int16 i = 0; i < 9; i++) {
                 for (Int16 j = 0; j < 9; j++) {
-                    if (data[i, j] == 0 && remaining[i, j].Count <= 0) { 
-                        return true; 
+                    if (data[i, j] == 0 && remaining[i, j].Count <= 0) {
+                        return true;
                     }
-                }         
+                }
             }
             return false;
         }
@@ -342,28 +306,37 @@ namespace ProjectEuler {
             return rtn;
         }
 
-        public Int16[,] DataCopy() {
-            Int16[,] rtn = new Int16[9,9];
-            for (Int16 i = 0; i<9; i++) {
-                for (Int16 j = 0; j<9; j++) {
+        public Int16[, ] DataCopy () {
+            Int16[, ] rtn = new Int16[9, 9];
+            for (Int16 i = 0; i < 9; i++) {
+                for (Int16 j = 0; j < 9; j++) {
                     rtn[i, j] = data[i, j];
                 }
             }
             return rtn;
         }
 
-        public List<Int16>[,] RemainingCopy() {
-            List<Int16>[,] rtn = new List<Int16>[9,9];
-            for (Int16 i = 0; i<9; i++) {
-                for (Int16 j = 0; j<9; j++) {
-                    List<Int16> add = new List<Int16>();
-                    foreach ( Int16 toAdd in remaining[i, j]) {
-                        add.Add(toAdd);
+        public List<Int16>[, ] RemainingCopy () {
+            List<Int16>[, ] rtn = new List<Int16>[9, 9];
+            for (Int16 i = 0; i < 9; i++) {
+                for (Int16 j = 0; j < 9; j++) {
+                    List<Int16> add = new List<Int16> ();
+                    foreach (Int16 toAdd in remaining[i, j]) {
+                        add.Add (toAdd);
                     }
                     rtn[i, j] = add;
                 }
             }
             return rtn;
+        }
+
+        public void Print () {
+            for (Int16 i = 0; i < 9; i++) {
+                for (Int16 j = 0; j < 9; j++) {
+                    Console.Write (data[i, j]);
+                }
+                Console.Write (System.Environment.NewLine);
+            }
         }
     }
 }
