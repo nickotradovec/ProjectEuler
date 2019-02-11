@@ -7,16 +7,15 @@ namespace ProjectEuler
         static void Main(string[] args)
         {
             DateTime dtmStart = DateTime.Now;
-            ISolve problem = new PE96_1();           
+            ISolve problem = new PE95_1();           
             
             problem.SetData();
             Console.WriteLine("Initial data set.");
 
             problem.Solve();
             
-            DateTime dtmCompleted = DateTime.Now;
-            TimeSpan tspLength = dtmCompleted - dtmStart;
-            Console.WriteLine($"Total elapsed time: {tspLength.TotalSeconds} seconds");
+            TimeSpan tspLength = DateTime.Now - dtmStart;
+            Console.WriteLine($"Done. Total elapsed time: {tspLength.TotalSeconds} seconds");
         }
     }
 
