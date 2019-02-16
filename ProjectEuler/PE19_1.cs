@@ -20,6 +20,8 @@ namespace ProjectEuler {
                 dtmDate = dtmDate.AddDays(1);
             }
             Console.WriteLine(count);
+
+            
         }
     }
 }
